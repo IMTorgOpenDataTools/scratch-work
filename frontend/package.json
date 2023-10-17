@@ -1,0 +1,21 @@
+{
+  "name": "scratch",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build; bash ./deploy.sh;",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "pinia-orm": "^1.7.2",
+    "pinia-plugin-persistedstate": "^3.2.0",
+    "vite-plugin-singlefile": "^0.13.5",
+    "vue": "^3.3.4"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.2.0",
+    "@vitejs/plugin-vue": "^4.3.4",
+    "vite": "^4.4.9"
+  }
+}

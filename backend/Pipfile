@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+pdfkit = "*"
+flask-cors = "*"
+bs4 = "*"
+pypdf2 = "*"
+pypdf = "*"
+google = "*"
+tldextract = "*"
+python-whois = "*"
+requests-html = "*"
+logzero = "*"
+pytest = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
