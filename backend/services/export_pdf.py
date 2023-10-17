@@ -40,31 +40,31 @@ def url_to_pdf(UrlHrefs, N=10):
         print("Forever is over!")
         #raise Exception("end of time")
     
-    def run_pdfkit(href, pdfs):
-        print(f'running href: {href}')
-        result = pdfkit.from_url(href)
-        pdfs.append(result)
+    def run_pdfkit(Url, pdfs):
+        print(f'running href: {Url}')
+        result = pdfkit.from_url(Url.__repr__())
+        pdfs[Url.url] = result
         time.sleep(1)
         
-    pdfs = []
+    pdfs = {}
     UrlHrefList = []
     for url in UrlHrefs:
         Url = url if type(url) == UniformResourceLocator else UniformResourceLocator(url)
         if Url.get_file_artifact_() != 'NA':
             UrlHrefList.append(Url)
 
-    for idx, href in enumerate(UrlHrefList):
-        if href.file_format == 'html':
+    for idx, Url in enumerate(UrlHrefList):
+        if Url.file_format == 'html':
             signal.signal(signal.SIGALRM, handler)    #register the signal function handler
             signal.alarm(N)    #define a timeout for your function
             try:
-                run_pdfkit(href.__repr__(), pdfs)
-                print(f'completed href: {href} with length {len(pdfs[idx])}')
+                run_pdfkit(Url, pdfs)
+                print(f'completed href: {Url} with length {len(pdfs[Url.__repr__()])}')
                 signal.alarm(0)    #cancel
             except Exception as e:
                 print(f'There was an error: {e}')
-        elif href.file_format == 'pdf' and href.file_document:
-            pdfs.append(href.file_str)
+        elif Url.file_format == 'pdf' and Url.file_document:
+            pdfs[Url.url] = Url.file_str
     return pdfs
 
 
@@ -74,12 +74,16 @@ def save_individual_pdfs(pdfs, output_name):
     if len(pdfs) > 0:
         print(len(pdfs))
         pdf_files = []
-        for idx, pdf in enumerate(pdfs):
+        for url, pdf in pdfs.items():
             if len(pdf) > 100:
-                filename = str(output_name) + str(idx) + '.pdf'
-                with open(filename, 'wb') as f:
-                    f.write(pdf)
-                pdf_files.append(filename)
+                url_mod = url.replace('/','\\')
+                filename = str(output_name) + '-' + str(url_mod) + '.pdf'
+                bytes_name = bytes(str(url_mod), 'utf-8')
+                bytes_path = bytes(filename, 'utf-8')
+                if( len(bytes_name) < 255 and len(bytes_path) < 4096 ):
+                    with open(filename, 'wb') as f:
+                        f.write(pdf)
+                    pdf_files.append(filename)
     return True
 
 

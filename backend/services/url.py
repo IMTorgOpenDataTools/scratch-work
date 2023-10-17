@@ -289,8 +289,9 @@ class UniformResourceLocator:
                         if self.url_type != 'html':
                             logger.error('ERROR: `self.url_type` does not match content-type')  
                             raise Exception
-                        resp.html.render()
-                        txt = resp.html.text      #output as string
+                        #resp.html.render()
+                        #txt = resp.html.text      #output as string
+                        txt = resp.text
                         if len(txt) < 100:
                             logger.error('ERROR: HTML content length is insignificant')  
                             raise Exception
