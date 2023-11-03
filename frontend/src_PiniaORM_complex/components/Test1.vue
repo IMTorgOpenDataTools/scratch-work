@@ -1,155 +1,145 @@
 <template>
 
-    <button type="button" @click="setUser">Create</button><br>
-      <code>usePost.save(originalPosts);</code><br>
-      Observations:
-      <ul>
-        <li>Looking into `local storage: posts` for `author` data, the associated referencing data is stored as `user_id`.</li>
-      </ul><br>
+    <button type="button" @click="setData">Create</button><br>
 
-    <button type="button" @click="getPost">Read Posts</button><br>
-      <code>usePost.all()</code><br>
-
-    <button type="button" @click="getPostWithAuthors">Read Posts with Authors</button><br>
-      <code>usePost.query().with('author').get()</code><br>
-      Observations:
-      <ul>
-        <li>The difference between using `hasOne()` / `hasMany()`, and `belongsTo()` which Repo the foreign key is expected.</li>
-        <li>The only relationship data maintained is the foreign key.</li>
-        <li>Use a foreign key to maintain best practices: https://stackoverflow.com/questions/10982992/is-it-fine-to-have-foreign-key-as-primary-key</li> 
-      </ul>
-      <br>
-
-    <button type="button" @click="getPostWithCondition">Read Posts with Condition</button><br>
-      <code>usePost.query().with('author').where('id', 1).get()</code><br>
-
-    <button type="button" @click="getPostWithNestedCondition">Read Posts with Nested Condition</button><br>
-      <code>usePost.whereHas('author', (query)=>{query.where('id',1) }).with('comments').get()</code><br>
-
-    <button type="button" @click="getPostWithMultiNestedCondition">Read Posts with Multi Nested Condition</button><br>
-      <code>usePost.whereHas('author', 
-                        (query)=>{query.where('id',1)
-                        }).with('comments',
-                        (query)=>{query.where('id',1)
-                        }).get()
-      </code><br>
-
+    <button type="button" @click="getData">Request</button><br>
     <br><h3>Results</h3>
-    <div v-for="user of display.users" >
-      {{user}}
-    </div>
-
-    <div v-for="post of display.posts" >
-      {{post}}
+    <div v-for="record of display.results" >
+      {{record}}
     </div>
 
 </template>
 
 <script>
-import {useUser, useComment, usePost} from '@/main.js';
+import {usePerson, usePersonProjectStatus, useProject, 
+  useInteraction, useUseCase, useLifecycle, 
+  useLifecycleStep, useAccount
+} from '@/main.js';
+import {populateAccountTestData,
+  defaultLifecycle, defaultSteps,
+  populateProjectTestData, populateContactTestData
+} from '@/assets/defaults.js'
 
 export default {
   name: `Test`,
   data() {
     return {
       display:{
-        users:[],
-        posts:[]
+        results:[]
       }
     }
   },
   methods:{
-    setUser(){
-        usePost.save(originalPosts);
+    setData(){
+      save_lifecycle()
+      save_project()
+      save_contact()
+      
     },
-    getUser(){
-        this.display.posts.length = 0
-        const users = useUser.all()
-        this.display.users.push(...users )
-    },
-    getPost(){
-        this.display.users.length = 0
-        const posts = usePost.all()
-        this.display.posts.push(...posts)
-    },
-    getPostWithAuthors(){
-        //users with posts
-        const users = useUser.query().with('posts').get()
-        this.display.posts.push(...users)
+    getData(){
+      /*
+      const lifecycles = get_lifecycles()
+      this.display.results.length = 0
+      this.display.results.push(...lifecycles )
 
-        //posts with users
-        const posts = usePost.query().with('author').get()
-        this.display.posts.push(...posts)
-    },
-    getPostWithCondition(){
-        this.display.users.length = 0
-        this.display.posts.length = 0
-        const posts = usePost.query().with('comments').with('author').where('id', 1).get()
-        this.display.posts.push(...posts)
-    },
-    getPostWithNestedCondition(){
-        this.display.users.length = 0
-        this.display.posts.length = 0
-        //const posts = usePost.with('author', (query)=>{query.where('id',1) }).with('comments').get()   <<< does not constrain authors, instead returns `null`
-        const posts = usePost.whereHas('author', (query)=>{query.where('id',1) }).with('comments').get()
-        this.display.posts.push(...posts)
-    },
-    getPostWithMultiNestedCondition(){
-        this.display.users.length = 0
-        this.display.posts.length = 0     /*
-        const posts = usePost.whereHas('author', 
-                        (query)=>{query.where('id',1)
-                        }).with('comments',
-                        (query)=>{query.where('author',1)
-                        }).get()
-        */
-        //or, maybe this is better 
-        const posts = useUser.where('id',1).with('posts').with('comments').get()
-        this.display.posts.push(...posts)
+      const lifecycles = get_lifecycles_with_projects()
+      this.display.results.length = 0
+      this.display.results.push(...lifecycles )
+      
+      const projects = get_projects()
+      this.display.results.length = 0
+      this.display.results.push(...projects )
+      */
+
     }
   }
 };
 
+/*
+## Insert (Save / Update)
 
-const originalPosts = [
-      {
-        id: 1,
-        body: '.....',
-        author: { id: 1, name: 'User 1' },
-        comments: [
-          {
-            id: 1,
-            comment: '.....',
-            author: { id: 2, name: 'User 2' }
-          },
-          {
-            id: 2,
-            comment: '.....',
-            author: { id: 2, name: 'User 2' }
-          }
-        ]
-      },
-      {
-        id: 2,
-        author: { id: 2, name: 'User 2' },
-        body: '.....',
-        comments: [
-          {
-            id: 3,
-            comment: '.....',
-            author: { id: 3, name: 'User 3' }
-          },
-          {
-            id: 4,
-            comment: '.....',
-            author: { id: 1, name: 'User 1' }
-          },
-          {
-            id: 5,
-            comment: '.....',
-            author: { id: 3, name: 'User 3' }
-          }
-        ]
-      }
-    ]
+* New Lifecycle - tables: Lifecycle > LifecycleStep
+* New Project - tables: Project > Lifecycle
+* New Contact - tables: Person > Project(s) > PersonProjectStatus > Person (ReferredBy)
+
+* Log Event - tables: Interaction > PersonProjectStatus
+* Log Interaction - tables: Interaction > PersonProjectStatus
+* Log UseCase - tables: UseCase > PersonProjectStatus
+
+* ???
+
+
+## Query
+
+* 
+
+
+## notes
+* Create Event table (from Interaction)
+  - Type [Task, Interaction] ...later, include Deadline, Gateway, etc.
+  - Task is an Event with additional fields: code commit ???
+  - meeting being an Interation Type of Event with multiple participants
+
+*/
+
+// Lifecycle
+function save_lifecycle(){
+  for(let step of defaultSteps){
+    defaultLifecycle.LifecycleStep.push(step)
+  }
+  const testLifecycle = [defaultLifecycle]
+  for(const plan of testLifecycle){
+      useLifecycle.save({
+            Name: plan.Name,
+            LifecycleStep: plan.LifecycleStep
+          });
+    }
+}
+function get_lifecycles(){
+  //Get Lifecycles with associated Step names
+  const plans = useLifecycle.with('LifecycleStep').get()
+  plans.map(item => {
+    item.LifecycleStep = item.LifecycleStep.map(step => { return step.Name })
+  }) 
+  return plans
+}
+function get_lifecycles_with_projects(){
+  //Get Lifecycles with associated Projects
+  const plans = useLifecycle.all()
+  const projects = useProject.with('Lifecycle').get()
+  for(const plan of plans){
+    const selected_projects = projects.filter(item => item.LifecycleId == plan.id)
+    plan.Projects = selected_projects.length
+    delete plan.LifecycleStep
+  }
+  return plans
+}
+
+// Projects
+function save_project(){
+  const plans = get_lifecycles()
+  populateProjectTestData(useProject, plans[0].id)
+}
+function get_projects(){
+  const projects = useProject.with('Lifecycle').get()
+  projects.map(item => {
+    item.Lifecycle = item.Lifecycle.Name 
+  }) 
+  return projects
+}
+
+// Contacts
+function save_contact(){
+  const ProjectName = useProject.all()[0].Name
+  const selectedProject = useProject.all().filter(item => item.Name == ProjectName)[0]
+  const referredByName = ''
+  const referredBy = usePerson.all().filter(item => item.Fullname == referredByName)[0]
+  populateContactTestData(usePerson, selectedProject, referredBy)
+}
+
+
+
+
+
+
 </script>

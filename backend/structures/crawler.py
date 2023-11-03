@@ -8,10 +8,8 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 
-from .url import UniformResourceLocator
-from .utils import check_urls_are_valid
-from .export_pdf import url_to_pdf, save_combine_pdfs
-from ._constants import logger
+from ..structures.url import UniformResourceLocator
+from ..services._constants import logger
 
 import googlesearch
 
@@ -20,53 +18,103 @@ import itertools
 
 
 
+#argument templates
+class BaseLogger:
+    """Base class for the Crawler's logger."""
+    def __init__(self):
+        pass
+
+    def info(self, msg):
+        print('INFO: {msg}')
+
+    def error(self, msg):
+        print('ERROR: {msg}')
+
+
+class BaseSearchScenario:
+    """Base class for the Crawler's search scenario conditions."""
+    def __init__(self, url, list_of_search_terms):
+        self.url = url
+        self.list_of_search_terms = list_of_search_terms
+
+
+class BaseExporter:
+    """Base class for the Crawler's exporter."""
+    def __init__(self):
+        pass
+
+    def export(self, url_list):
+        return url_list
 
 
 
-def domains_workflow(post_data):
-    """Receive the post request, (background) process the domains,
-    and return the paths.
-    """
-    #collect urls
-    url_list = post_data.get('domainUrl')
-    ValidatedUrls = check_urls_are_valid(url_list)
-    results = []
-    for Url in ValidatedUrls:
-        UrlCrawl = Crawler(Url, logger)
-        result_urls = UrlCrawl.generate_href_chain()
-        results.extend( UrlCrawl.export_pdfs(result_urls) )
 
-    return results
-        
-
-    
+scenario = BaseSearchScenario(url='',
+                              list_of_search_terms=['creditcard`, `fees', 'terms conditions', 'overdraft', 'non insufficient funds']
+                                )
 
 
 
 
-
-
+#primary class
 class Crawler:
+    """Crawl sites specific to a url and search terms to
+    produce a list of urls which can be exported.
 
-    def __init__(self, url, logger):
-        self.url = UniformResourceLocator(url)
+    This is an 'opportunistic' crawler in that it only 
+    accepts an initial domain and search scenario, then
+    leverages google search to find target pages.
+    
+    Usage::
+    UrlCrawl = Crawler(logger, exporter, scenario)
+    """
+
+    def __init__(self, scenario, logger, exporter):
+        self.scenario = scenario
+        self.scenario.url = self._ensure_url_class(scenario.url)
         self.logger = logger
+        self.exporter = exporter
 
     def __repr__(self):
-        return self.url
+        return self.scenario.url
+    
+    def _ensure_url_class(self, url):
+        """Provide url of class UniformResourceLocator if not one already."""
+        result = url if type(url) == UniformResourceLocator else UniformResourceLocator(url)
+        return result
+    
+    def check_urls_are_valid(self, url_list, base_url=''):
+        """Basic checks of urls in a list
+        * ensure proper url formatting
+        * consistent domain owner (if base_domain provided)
+        """
+        validated_urls = []
+        BaseUrl = self._ensure_url_class(base_url)
+        if base_url:
+            BaseUrl.check_valid_format()
+        url_list = list(set(url_list))
+        for url in url_list:  
+            Url = self._ensure_url_class(url)
+            check_scheme = Url.check_scheme()
+            check_owner = Url.has_same_url_owner_(BaseUrl) if base_url else True
+            if check_scheme and check_owner:
+                validated_urls.append(Url)
+            else:
+                pass
+        logger.info(f'validated urls: {validated_urls}')
+        return validated_urls
 
     def generate_href_chain(self):
         """Given a domain name, collects the appropriate
         href links."""
-        LIST_OF_SEARCH_TERMS = ['creditcard`, `fees', 'terms conditions', 'overdraft', 'non insufficient funds']
         result_urls = {}
         
-        initial_list = self.get_initial_url_list(self.url, LIST_OF_SEARCH_TERMS)
-        hrefs = self.get_hrefs_within_depth(base_url = self.url, 
+        initial_list = self.get_initial_url_list(self.scenario.url, self.list_of_search_terms)
+        hrefs = self.get_hrefs_within_depth(base_url = self.scenario.url, 
                                            depth = 0, 
                                            initial_url_list = initial_list
                                            )
-        result_urls[self.url] = hrefs
+        result_urls[self.scenario.url] = hrefs
         self.logger.info(f"result_urls: {result_urls}")
         return result_urls
 
@@ -93,7 +141,7 @@ class Crawler:
                                                      )
                 unique_urls = [url for url in search_results if url not in result_url_list]
                 SearchUrls = [UniformResourceLocator(result) for result in unique_urls]
-                ValidUrls = check_urls_are_valid(url_list = SearchUrls, 
+                ValidUrls = self.check_urls_are_valid(url_list = SearchUrls, 
                                                  base_url = BaseUrl
                                                  )
                 result_url_list.extend(ValidUrls)
@@ -110,7 +158,7 @@ class Crawler:
         """
         BaseUrl_JPM = UniformResourceLocator('https://www.jpmorgan.com')
         searched_hrefs = set()
-        BaseUrl = base_url if type(base_url) == UniformResourceLocator else UniformResourceLocator(base_url)
+        BaseUrl = self._ensure_url_class(base_url)
         #if len(initial_url_list) == 0:
         #    hrefs = BaseUrl.get_hrefs_within_hostname_(searched_hrefs = searched_hrefs)
         #    #searched_hrefs = add_list_to_set(searched_hrefs, hrefs)
@@ -120,11 +168,11 @@ class Crawler:
         while depth > -1:
             level_hrefs = []
             for url in hrefs:
-                Url = url if type(url) == UniformResourceLocator else UniformResourceLocator(url)
+                Url = self._ensure_url_class(url)
                 check_owner = Url.has_same_url_owner_(BaseUrl)
                 if not (Url in searched_hrefs) and not check_owner:
                     new_hrefs = Url.get_hrefs_within_hostname_(searched_hrefs = searched_hrefs)
-                    valid_hrefs = check_urls_are_valid(url_list = new_hrefs, 
+                    valid_hrefs = self.check_urls_are_valid(url_list = new_hrefs, 
                                                        base_url = BaseUrl_JPM
                                                        )
                     searched_hrefs.add(Url)
@@ -135,18 +183,14 @@ class Crawler:
         return searched_hrefs
     
 
-    def export_pdfs(self, result_urls):
-        #convert to pdf
-        processing_results = {}
-        for Url, hrefs in result_urls.items():
-            name = Url.get_domain()
-            output_name = f'{name}'
-            output_path = Path() / 'static' / 'pdf'
-            output_full = Path(output_path) / output_name
+    def export(self, urls):
+        """Export urls through customization of BaseExporter class.
 
-            pdfs = url_to_pdf(hrefs)
-            results = save_combine_pdfs(pdfs, output_name)
-            #return dict of data
-            #processing_results[str(Url)] = (result, str(output_full))
-
-        return results
+        The result is typically one of the following:
+        * bool - result of process
+        * [bool] - list of bools for result of multiple processes
+        * [f(url)] - transformation of the urls
+        
+        """
+        result_urls = self.exporter.export(urls)
+        return result_urls

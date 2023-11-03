@@ -9,6 +9,7 @@ const entryPoint = './index_PiniaORM_complex.html'
 const sourceFiles = './src_PiniaORM_complex'
 
 
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [

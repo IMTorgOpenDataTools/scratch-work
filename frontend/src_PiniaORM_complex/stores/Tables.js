@@ -17,11 +17,11 @@ export class Person extends Model {
       Office: this.string(""),
       Firm: this.string(""),
       //Projects: this.attr([""]),
-      Statuses: this.hasMany(PersonProjectStatus , 'StatusId'),   //insert with ReferredBy for selected Project
+      Statuses: this.hasMany(PersonProjectStatus, 'StatusId'),   //insert with ReferredBy for selected Project
       // collect with repos
-      ReferencesGiven: this.hasMany(PersonProjectStatus , 'RefId'),
-      Interactions: this.hasMany(Interaction, 'ParticipantsId'),    
-      UseCases: this.hasMany(Interaction, 'ParticipantsId'),        
+      //ReferencesGiven: this.hasMany(PersonProjectStatus , 'RefId'),
+      //Interactions: this.hasMany(Interaction, 'ParticipantsId'),    
+      //UseCases: this.hasMany(Interaction, 'ParticipantsId'),        
     }
   }
 }
@@ -30,22 +30,24 @@ export class Person extends Model {
 //import { UseCase } from '@/stores/UseCase.js';
 
 export class PersonProjectStatus extends Model {
-    static entity = 'Status'
+    static entity = 'PersonProjectStatus'
     //static primaryKey = ['StatusId', 'Person', 'Project']
     static fields(){
         return{
             id: this.uid(),
-            StatusId: this.uid(),
-            PersonId: this.attr(null),
-            Person: this.belongsTo(Person, 'PersonId'),
+            StatusId: this.attr(null),
+            //PersonId: this.attr(null),
+            //Person: this.belongsTo(Person, 'PersonId'),
             ProjectId: this.attr(null),
             Project: this.belongsTo(Project, 'ProjectId'),
             RefId: this.attr(null),
             ReferredBy: this.belongsTo(Person, 'RefId'),
-            //CurrentLifecycleStep: this.string(""),
-            LifecycleSteps: this.hasMany(LifecycleStep, 'StepId'),          //changes; related to Project Lifecycle and its Step
-            Interactions: this.hasMany(Interaction, 'InteractionId'),
-            UseCases: this.hasMany(UseCase, 'UseCaseId'),
+            CurrentLifecycleStep: this.string(""),
+            //LifecycleStepIds: this.attr([]),
+            LifecycleSteps: this.hasMany(StepStatus, 'StepId'),
+            // collections
+            //Interactions: this.hasMany(Interaction, 'InteractionId'),
+            //UseCases: this.hasMany(UseCase, 'UseCaseId'),
         }
     }
     static mutators(){
@@ -60,6 +62,46 @@ export class PersonProjectStatus extends Model {
     }
   }
 }
+
+export class StepStatus extends Model {
+  static entity = 'stepStatus'
+  static fields () {
+    return {
+      id: this.uid(),
+      StepId: this.attr(null),
+      LifecycleStepId: this.attr(),
+      LifecycleStep: this.belongsTo(LifecycleStep, 'LifecycleStepId'),
+      StatusDate: this.attr()
+    }
+  }
+  static casts(){
+    return {
+      StatusDate: DateCast,
+    }
+  }
+}
+
+
+/*
+class StepStatus extends Model {
+  static entity = 'stepStatus'
+
+  static primaryKey = ['StepId', 'LifecycleStepIds']
+
+  static fields () {
+    return {
+      StepId: this.attr(null),
+      LifecycleStepIds: this.attr(null)
+    }
+  }
+}*/
+
+
+
+
+
+
+
 
 
 
@@ -111,8 +153,8 @@ export class Interaction extends Model {
     static fields(){
         return{
             id: this.uid(),
-            InteractionId: this.uid(),
-            PersonProject: this.belongsTo(PersonProjectStatus, 'InteractionId'),
+            InteractionId: this.attr(),
+            //PersonProject: this.belongsTo(PersonProjectStatus, 'InteractionId'),
             //LifecycleStep: this.string(""),
             Participants: this.hasMany(Person, 'id'),    //no corresponding Person belongsTo()
             Datetime: this.attr(),
@@ -182,7 +224,6 @@ export class LifecycleStep extends Model {
   static fields () {
     return {
       id: this.uid(),
-      //LifecycleId: this.attr(null),
       StepId: this.attr(null),
       Name: this.string('').notNullable(),
       DurationBizDays: this.number(),

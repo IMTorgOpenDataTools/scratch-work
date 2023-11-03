@@ -1,5 +1,6 @@
 import {faker} from '@faker-js/faker';
 import {addDays, randomIntFromInverval} from './utils.js';
+import { useLifecycle, useProject } from '../main.js';
 
 
 
@@ -190,7 +191,7 @@ export function populateAccountTestData(useProject){
         });
 }
 
-export function populateProjectTestData(useProject){
+export function populateProjectTestData(useProject, lifecycleId){
     // Populate tables with test data
     for(const project of testProjects){
       useProject.save({
@@ -199,24 +200,46 @@ export function populateProjectTestData(useProject){
           Category: project.Category,
           StartDate: project.Startdate,
           EndDate: project.Enddate,
-          Lifecycle: project.Lifecycle,
+          LifecycleId: lifecycleId,
           Repos: project.Repos
         });
     }
 }
 
-export function populateContactTestData(usePerson){
+export function populateContactTestData(usePerson, project, referredBy){
     // Populate tables with test data
     for(const contact of testContacts){
-      usePerson.save({
+        //get random person for referredby
+        const persons = usePerson.all()
+        let refId = null
+        if( persons.length > 0){
+            const int = randomIntFromInverval(0,persons.length-1)
+            refId = persons[int].id
+        }
+        //get step
+        const lc = useLifecycle.all()
+        const selected_lc = lc.filter(item => item.id == project.LifecycleId)[0]
+        const selected_step = selected_lc.LifecycleStep[randomIntFromInverval(0, selected_lc.LifecycleStep.length-1)]
+        
+        const dt = faker.date.betweens({from: '2020-01-01T00:00:00.000Z', to:'2023-01-01T00:00:00.000Z', count:1})[0]
+        contact.Statuses
+        usePerson.save({
             Fullname: contact.Fullname,
             Title: contact.Title,
             Email: contact.Email,
             Number: contact.Number,
             Office: contact.Office,
             Firm: contact.Firm,
-            Projects: contact.Projects,
-            Statuses: contact.Statuses
+            Statuses: [{
+                ProjectId: project.id,
+                RefId: refId,
+                LifecycleSteps: [{
+                    LifecycleStepId: selected_step.id,
+                    StatusDate: new Date(dt)
+                }],
+            }]
+            // collect with repos
+            //...TODO
       });
     }
   }

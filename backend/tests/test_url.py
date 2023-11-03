@@ -6,8 +6,11 @@ __author__ = "Jason Beach"
 __version__ = "0.1.0"
 __license__ = "MIT"
 
+#sys.path.append(Path('backend').absolute().as_posix() )
+from backend.structures.url import UniformResourceLocator
 
-from backend.services.url import UniformResourceLocator
+from pathlib import Path
+
 
 hrefs = [
     'https://www.jpmorgan.com',
@@ -68,10 +71,19 @@ def test_get_scheme():
     result = [url.get_scheme() for url in urls]
     assert result == ['https://', 'https://', 'https://', 'https://', '', 'http://']    
 
+def test_get_filename():
+    result = [url.get_filename() for url in urls]
+    assert result == ['jpmorgan.html',
+                      'chase.html',
+                      'jpmorgan-interchange-guide.pdf',
+                      'jpmorgan-chase-bank-national-association.html',
+                      'somedomain.html',
+                      None
+                      ] 
+
 def test_get_subdomain():
     result = [url.get_subdomain() for url in urls]
     assert result == ['www', '', 'www', 'www', '', 'domain']
-
 
 def test_get_owner_():
     BaseUrl = UniformResourceLocator('https://www.jpmorgan.com')

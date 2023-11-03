@@ -1,0 +1,58 @@
+{
+DocumentRecord: {
+      //file indexing
+      id:'',
+      reference_number:'',
+      filepath : '',
+      filename_original:'',
+      filename_modified:'',
+
+      //raw
+      file_extension:'',
+      filetype:'', 
+      page_nos:'',
+      length_lines:'',
+      file_size_mb:'', 
+      date:'',
+
+      //inferred / searchable
+      title:'',
+      author:'', 
+      subject:'',
+      toc:[],
+      pp_toc:'',
+
+      body_chars: {},
+      body_pages: {},
+      length_lines_array: [],
+      length_lines:0,
+      body:'',
+      clean_body:'',
+      readability_score:'',
+      tag_categories:'',
+      keywords:'',
+      summary:'',
+
+      //added by frontend
+      html_body: null,
+      date_created: null,
+      date_mod: null,
+      canvas_array: [],
+
+      sort_key: null,
+      hit_count: null,
+      snippets: null,
+      selected_snippet_page: null,
+      _showDetails: false,
+      _activeDetailsTab: 0,
+      accumPageLines: null
+    }
+},
+
+DocumentIndexData: {
+  documents: [],
+  indices: {      
+    lunrIndex: {},
+    strIndex: ''
+  }
+}

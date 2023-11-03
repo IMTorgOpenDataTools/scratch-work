@@ -1,5 +1,5 @@
 
-from services.url_to_pdf import domains_workflow
+from services.workflow import domains_workflow
 
 from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS

@@ -7,7 +7,7 @@ __author__ = "Jason Beach"
 __version__ = "0.1.0"
 __license__ = "MIT"
 
-from ._constants import logger
+from ..services._constants import logger
 
 import tldextract
 import whois
@@ -18,8 +18,10 @@ from bs4 import BeautifulSoup
 import pypdf
 
 import urllib
+from pathlib import Path
 import io
 import time
+import sys
 
 
 class UniformResourceLocator:
@@ -51,20 +53,22 @@ class UniformResourceLocator:
             raise TypeError
 
         #components   
-        self.scheme = ''
+        self.scheme = ''                #initialize with empty string, if not available, then populate with None
         self.suffix = ''
         self.valid_url = ''
-        self.url_type = None            #from suffix in  _possible_suffixes
+        self.filename = ''
+        self.url_type = ''              #from suffix in  _possible_suffixes
 
         #metadata
-        self.whois_account = None
-        self.owner = None
+        self.whois_account = ''
+        self.owner = ''
 
         #artifacts
-        self.file_type = None           #from url content-type
-        self.file_format = None         #inferred from document
+        self.file_type = ''             #from url content-type
+        self.file_format = ''           #inferred from document
         self.file_str = ''              #document string
-        self.file_document = None       #document
+        self.file_document = ''         #document
+        self.file_size_mb = ''
         self.file_visible_text = ''
 
         self.run_checks()
@@ -72,7 +76,7 @@ class UniformResourceLocator:
         
     #basic
     def __repr__(self):
-        return self.url
+        return str(self.url)
 
     def __set_logger(self, logger=None):
         #TODO:use in-case logger not added
@@ -86,6 +90,7 @@ class UniformResourceLocator:
         return (
             f'URL: {self.url}\n'
             f'Domain: {self.get_domain()}\n'
+            f'Name: {self.get_filename()}\n'
             f'Owner: {self.owner}\n'
             f'Type: {self.url_type}\n'
             f'File Format: {self.file_format}\n'
@@ -149,12 +154,12 @@ class UniformResourceLocator:
         Usually used for landing page.
         fqdn = <hostname> and <domain>
         """
-        pass
+        return None
 
     def get_hostname(self):
         """Get hostname.
         Network or system used to deliver a user to a certain address.
-        hostname = <www>.<internal_network>.<suffix>
+        schema: hostname = <www>.<internal_network>.<suffix>
         """
         return urllib.parse.urlparse(self.url).hostname
     
@@ -162,7 +167,7 @@ class UniformResourceLocator:
         """Get domain name.
         Site or project the user is accessing.  This is typically used
         to ensure url is within same site.
-        <subdomain>.<domain>.<suffix>
+        schema: <subdomain>.<domain>.<suffix>
         """
         return tldextract.extract(self.url).domain
 
@@ -175,6 +180,40 @@ class UniformResourceLocator:
         """Get actual suffix which might not align
         with PSL."""
         return self.scheme
+    
+    def get_filename(self):
+        """Get general file name.
+        schema: <domain>/<filename>.<suffix>
+        """
+        #available
+        if self.filename and self.filename != '':
+            return self.filename
+        #check for existence
+        tmp = urllib.parse.urlparse(self.url).path.split('/')
+        if len(tmp) < 2 and self.get_suffix():
+            self.filename = f'{self.get_domain()}.{self.url_type}'
+            return self.filename
+        elif not self.get_suffix():
+            return None
+        #make best attempt
+        stem = ''
+        if not stem:
+            try:
+                stem = Path(self.url.__str__()).stem
+            except:
+                pass
+        if not stem:
+            try:
+                tmp = urllib.parse.urlparse(self.url).path.split('/')
+                if len(tmp) > 1:
+                    stem = tmp[len(tmp)-1]
+            except:
+                pass
+        if stem:
+            self.filename = f'{stem}.{self.url_type}'
+        else:
+            self.filename = None
+        return self.filename
     
     def get_subdomain(self):
         return tldextract.extract(self.url).subdomain
@@ -189,7 +228,7 @@ class UniformResourceLocator:
         """Get the file in whatever file type is supported."""
         if not all([self.file_format, self.file_document]):
             logger.error(f"no data try calling `self.get_file_artifact_()")
-        elif self.file_format == 'NA':
+        elif self.file_format == None:
             logger.error(f"`self.get_file_artifact_() called, but no data")
         return (self.file_type ,self.file_document)
 
@@ -272,9 +311,10 @@ class UniformResourceLocator:
         * `self.file_format`
         * `self.file_str`
         * `self.file_document`
+        * `self.file_size_mb`
 
-        note: Failing to parse the file will provision with an 'NA'.  This is used
-        over `None` to document that parsing was attempted.
+        note: Failing to parse the file will provision with a None.  This is used
+        over empty string ('') to document that parsing was attempted.
         """
         def get_artifact():
             """Get url artifact and verify self.url_type is correct."""
@@ -328,7 +368,7 @@ class UniformResourceLocator:
                         self.file_document = soup
                 except:
                     logger.error(f'ERROR: file for url {self.url} is invalid HTML')
-                    result = 'NA'
+                    result = None
             #pdf
             elif resp and self.url_type == 'pdf':
                 try:
@@ -342,12 +382,14 @@ class UniformResourceLocator:
                         raise Exception
                 except Exception:    #pypdf.errors.PdfReadError:
                     logger.error(f'ERROR: file for url {resp.url} is invalid PDF')
-                    result = 'NA'
+                    result = None
             #if no url (no file)
             else:
-                result = 'NA'
+                result = None
                 self.file_format = result
                 self.file_document = result
+            size_in_mb = int( sys.getsizeof(self.file_document) )  * 1e-6
+            self.file_size_mb = round(size_in_mb, ndigits=3)
             return result
         
         result = ''

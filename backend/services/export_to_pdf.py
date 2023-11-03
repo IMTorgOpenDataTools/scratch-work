@@ -16,17 +16,55 @@ be preferable to provide to VDI in a cleaner manner, such as:
 3) results are sent to VDI for indexing after processing
 """
 
-from .url import UniformResourceLocator
+from ..structures.url import UniformResourceLocator
+from ..structures.crawler import BaseExporter
 
 from PyPDF2 import PdfMerger
 import pdfkit
 
+from pathlib import Path
 import signal
 import time
 
 
 
+class ExportToIndividualPdfs(BaseExporter):
+    def export(self, url_list):
+        #convert to pdf
+        processing_results = {}
+        for Url, hrefs in url_list.items():
+            name = Url.get_domain()
+            output_name = f'{name}'
+            output_path = Path() / 'static' / 'pdf'
+            output_full = Path(output_path) / output_name
 
+            pdfs = url_to_pdf(hrefs)
+            results = save_individual_pdfs(pdfs, output_name)
+            #return dict of data
+            #processing_results[str(Url)] = (result, str(output_full))
+        #return super().export(url_list)
+        return results
+    
+
+class ExportToCombinedPdf(BaseExporter):
+    def export(self, url_list):
+        #convert to pdf
+        processing_results = {}
+        for Url, hrefs in url_list.items():
+            name = Url.get_domain()
+            output_name = f'{name}'
+            output_path = Path() / 'static' / 'pdf'
+            output_full = Path(output_path) / output_name
+
+            pdfs = url_to_pdf(hrefs)
+            results = save_combined_pdfs(pdfs, output_name)
+            #return dict of data
+            #processing_results[str(Url)] = (result, str(output_full))
+        #return super().export(url_list)
+        return results
+
+
+#supporting functions
 def url_to_pdf(UrlHrefs, N=10):
     """Given a list of urls 
     i) attempts to convert url to pdf
@@ -68,6 +106,7 @@ def url_to_pdf(UrlHrefs, N=10):
     return pdfs
 
 
+
 def save_individual_pdfs(pdfs, output_name):
     """Save each individual pdf to file."""
     #usage: save_pdfs(pdfs, output_path)
@@ -87,7 +126,7 @@ def save_individual_pdfs(pdfs, output_name):
     return True
 
 
-def save_combine_pdfs(pdfs, output_name):
+def save_combined_pdfs(pdfs, output_name):
     """Save each individual pdf to file, then merge all into a combined file."""
     #usage: save_pdfs(pdfs, output_path)
     if len(pdfs) > 0:
