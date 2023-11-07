@@ -15,7 +15,7 @@ export const useDisplayStore = DisplayStore()
 
 //table init
 import {Person, PersonProjectStatus, StepStatus,
-    Project, Interaction, UseCase, 
+    Project, Event, Feedback, 
     Lifecycle, LifecycleStep, 
     Account} from '@/stores/Tables.js';
 export const usePerson = useRepo(Person, pinia);
@@ -23,8 +23,8 @@ export const usePersonProjectStatus = useRepo(PersonProjectStatus, pinia);
 export const useStepStatus = useRepo(StepStatus, pinia);
 
 export const useProject = useRepo(Project, pinia);
-export const useInteraction = useRepo(Interaction, pinia);
-export const useUseCase = useRepo(UseCase, pinia);
+export const useEvent = useRepo(Event, pinia);
+export const useFeedback = useRepo(Feedback, pinia);
 
 export const useLifecycle = useRepo(Lifecycle, pinia);
 export const useLifecycleStep = useRepo(LifecycleStep, pinia);

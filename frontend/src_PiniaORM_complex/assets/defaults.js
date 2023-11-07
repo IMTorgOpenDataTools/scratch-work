@@ -1,6 +1,7 @@
 import {faker} from '@faker-js/faker';
 import {addDays, randomIntFromInverval} from './utils.js';
 import { useLifecycle, useProject } from '../main.js';
+import { Feedback } from '../stores/Tables.js';
 
 
 
@@ -131,29 +132,29 @@ while(i < 10){
         Projects: [testProjects[projects].Name],
         Statuses: []
     }
-    const numberOfInteractions = randomIntFromInverval(1,5)
-    const interactions = []
+    const numberOfEvents = randomIntFromInverval(1,5)
+    const Events = []
     let j = 0
-    while(j < numberOfInteractions){
-        const interaction = {
+    while(j < numberOfEvents){
+        const Event = {
             LifecycleStep: defaultSteps[randomIntFromInverval(0,3)].Name,
             Participants: [contact.Fullname],
             Datetime: new Date(),
             Comments: faker.lorem.paragraph(),
         }
-        interactions.push(interaction)
+        Events.push(Event)
         j++
     }
-    const numberOfUseCases = randomIntFromInverval(2,3)
-    const usecases = []
+    const numberOfFeedbacks = randomIntFromInverval(2,3)
+    const Feedbacks = []
     j = 0
-    while(j < numberOfUseCases){
-        const usecase = {
+    while(j < numberOfFeedbacks){
+        const Feedback = {
             Role: faker.person.jobTitle(),
             Use: faker.lorem.sentence(),
             PainPoint: faker.lorem.sentence()
         }
-        usecases.push(usecase)
+        Feedbacks.push(Feedback)
         j++
     }
 
@@ -169,8 +170,8 @@ while(i < 10){
         Project: contact.Projects[0],
         ReferredBy: '',     //TODO:applying referredBy errors
         CurrentLifecycleStep: defaultSteps[randomIntFromInverval(3,defaultSteps.length-1)].Name,
-        Interactions: interactions,
-        UseCases: usecases
+        Events: Events,
+        Feedbacks: Feedbacks
     }
     contact.Statuses.push(status)
 
@@ -230,10 +231,10 @@ export function populateContactTestData(usePerson, project, referredBy){
             Number: contact.Number,
             Office: contact.Office,
             Firm: contact.Firm,
-            Statuses: [{
+            PersonProjectStatus: [{
                 ProjectId: project.id,
                 RefId: refId,
-                LifecycleSteps: [{
+                StepStatus: [{
                     LifecycleStepId: selected_step.id,
                     StatusDate: new Date(dt)
                 }],
@@ -243,3 +244,42 @@ export function populateContactTestData(usePerson, project, referredBy){
       });
     }
   }
+
+  export function populateEventTestData(useEvent, usePersonProjectStatus, Project, participants){
+    const personprojects = []
+    for(const person of participants){
+        const selectedPersonProject = usePersonProjectStatus.where('StatusId', person.id).where('ProjectId', Project.id).get()
+        if(selectedPersonProject.length>1){
+            throw new Error('Project should be unique')
+        }
+        personprojects.push(...selectedPersonProject)
+    }
+    const dt = faker.date.betweens({from: '2020-01-01T00:00:00.000Z', to:'2023-01-01T00:00:00.000Z', count:1})[0]
+    useEvent.save({
+        Datetime: new Date(dt),
+        Comments: '',
+        PersonProject: personprojects
+    })
+
+    return true
+}
+
+export function populateFeedbackTestData(useFeedback, usePersonProjectStatus, usePerson){
+    const Feedbacks = [0,1,2,3]
+    for(const idea of Feedbacks){
+
+        const types = ['Feature', 'UseCase', 'Issue']
+        const int = randomIntFromInverval(0,2)
+        const Type = types[int]
+        const Status = usePersonProjectStatus.all(int)[0]
+        const person = usePerson.find(Status.StatusId)
+
+        useFeedback.save({
+            PersonProjectId: Status.id,
+            Type: Type,
+            Role: person.Title,
+            Use: '?',
+            PainPoint: '?'
+        })
+    }
+}

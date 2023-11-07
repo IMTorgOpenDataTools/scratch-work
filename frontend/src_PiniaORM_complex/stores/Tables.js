@@ -17,10 +17,10 @@ export class Person extends Model {
       Office: this.string(""),
       Firm: this.string(""),
       //Projects: this.attr([""]),
-      Statuses: this.hasMany(PersonProjectStatus, 'StatusId'),   //insert with ReferredBy for selected Project
+      PersonProjectStatus: this.hasMany(PersonProjectStatus, 'StatusId'),   //insert with ReferredBy for selected Project
       // collect with repos
       //ReferencesGiven: this.hasMany(PersonProjectStatus , 'RefId'),
-      //Interactions: this.hasMany(Interaction, 'ParticipantsId'),    
+      //Events: this.hasMany(Event, 'ParticipantsId'),    
       //UseCases: this.hasMany(Interaction, 'ParticipantsId'),        
     }
   }
@@ -44,9 +44,9 @@ export class PersonProjectStatus extends Model {
             ReferredBy: this.belongsTo(Person, 'RefId'),
             CurrentLifecycleStep: this.string(""),
             //LifecycleStepIds: this.attr([]),
-            LifecycleSteps: this.hasMany(StepStatus, 'StepId'),
+            StepStatus: this.hasMany(StepStatus, 'StepId'),
             // collections
-            //Interactions: this.hasMany(Interaction, 'InteractionId'),
+            Events: this.hasMany(Event, 'EventId'),
             //UseCases: this.hasMany(UseCase, 'UseCaseId'),
         }
     }
@@ -64,7 +64,7 @@ export class PersonProjectStatus extends Model {
 }
 
 export class StepStatus extends Model {
-  static entity = 'stepStatus'
+  static entity = 'StepStatus'
   static fields () {
     return {
       id: this.uid(),
@@ -146,24 +146,21 @@ export class Project extends Model {
 
 
 
-// Interaction, UseCase, Lifecycle
+// Event, UseCase, Lifecycle
 
-export class Interaction extends Model {
-    static entity = 'Interaction'
+export class Event extends Model {
+    static entity = 'Event'
     static fields(){
         return{
             id: this.uid(),
-            InteractionId: this.attr(),
-            //PersonProject: this.belongsTo(PersonProjectStatus, 'InteractionId'),
-            //LifecycleStep: this.string(""),
-            Participants: this.hasMany(Person, 'id'),    //no corresponding Person belongsTo()
+            PersonProject: this.belongsToMany(PersonProjectStatus, PersonProjectStatusEvent, 'EventId', 'PersonProjectStatusId'),
             Datetime: this.attr(),
+            Type: this.string(""),
             Comments: this.string(""),
         }
     }
     static casts(){
         return {
-          Participants: ArrayCast,
           Datetime: DateCast,
           Comments: StringCast
         }
@@ -181,14 +178,33 @@ export class Interaction extends Model {
       }
 }
 
+export class PersonProjectStatusEvent extends Model {
+  static entity = 'PersonProjectStatusEvent'
+  static primaryKey = ['PersonProjectStatusId','EventId']
+  static fields(){
+    return {
+      PersonProjectStatusId: this.attr(null),
+      EventId: this.attr(null)
+    }
+  }
+}
 
-export class UseCase extends Model {
-    static entity = 'UseCase'
+
+
+
+
+
+
+
+
+export class Feedback extends Model {
+    static entity = 'Feedback'
     static fields(){
         return{
             id: this.uid(),
-            UseCaseId: this.uid(),
-            PersonProject: this.belongsTo(PersonProjectStatus, 'UseCaseId'),
+            PersonProjectId: this.uid(),
+            PersonProject: this.belongsTo(PersonProjectStatus, 'PersonProjectId'),
+            Type: this.string(""),
             Role: this.string(""),
             Use: this.string(""),
             PainPoint: this.string("")
@@ -196,6 +212,7 @@ export class UseCase extends Model {
     }
     static casts(){
         return {
+          Type: StringCast,
           Role: StringCast,
           Use: StringCast,
           PainPoint: StringCast

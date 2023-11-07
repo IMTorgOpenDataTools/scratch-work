@@ -12,12 +12,13 @@
 
 <script>
 import {usePerson, usePersonProjectStatus, useProject, 
-  useInteraction, useUseCase, useLifecycle, 
+  useEvent, useFeedback, useLifecycle, 
   useLifecycleStep, useAccount
 } from '@/main.js';
 import {populateAccountTestData,
   defaultLifecycle, defaultSteps,
-  populateProjectTestData, populateContactTestData
+  populateProjectTestData, populateContactTestData,
+  populateEventTestData, populateFeedbackTestData
 } from '@/assets/defaults.js'
 
 export default {
@@ -33,7 +34,9 @@ export default {
     setData(){
       save_lifecycle()
       save_project()
-      save_contact()
+      save_persons()
+      save_event()
+      save_feedbacks()
       
     },
     getData(){
@@ -49,8 +52,18 @@ export default {
       const projects = get_projects()
       this.display.results.length = 0
       this.display.results.push(...projects )
+      
+      const persons = get_persons_with_nested_status()
+      this.display.results.length = 0
+      this.display.results.push(...persons )
+      
+      const events = get_events()
+      this.display.results.length = 0
+      this.display.results.push(...events )
       */
-
+      const feedbacks = get_feedbacks()
+      this.display.results.length = 0
+      this.display.results.push(...feedbacks )
     }
   }
 };
@@ -129,12 +142,37 @@ function get_projects(){
 }
 
 // Contacts
-function save_contact(){
+function save_persons(){
   const ProjectName = useProject.all()[0].Name
   const selectedProject = useProject.all().filter(item => item.Name == ProjectName)[0]
   const referredByName = ''
   const referredBy = usePerson.all().filter(item => item.Fullname == referredByName)[0]
   populateContactTestData(usePerson, selectedProject, referredBy)
+}
+function get_persons_with_nested_status(){
+  const persons = usePerson.with('PersonProjectStatus', (query)=>{query.with('StepStatus')}).get()
+  return persons
+}
+
+// Events
+function save_event(){
+  const ProjectName = useProject.all()[0].Name
+  const selectedProject = useProject.all().filter(item => item.Name == ProjectName)[0]
+  const participants = usePerson.all().slice(0,2)
+  populateEventTestData(useEvent, usePersonProjectStatus, selectedProject, participants)
+}
+function get_events(){
+  const result = useEvent.all()
+  return result
+}
+
+// Feedback
+function save_feedbacks(){
+  populateFeedbackTestData(useFeedback, usePersonProjectStatus, usePerson)
+}
+function get_feedbacks(){
+  const feedbacks = useFeedback.all()
+  return feedbacks
 }
 
 
